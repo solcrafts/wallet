@@ -5,7 +5,8 @@ import Input from '../components/Input';
 import Card from '../components/Card';
 import { KeyringController } from '../lib/keyring';
 
-const DEFAULT_RELAY_URL = 'ws://localhost:8080/';
+const DEFAULT_RELAY_URL = 'wss://wallet-relay.solcraft.top';
+const LEGACY_RELAY_URLS = new Set(['ws://localhost:8080', 'ws://localhost:8080/']);
 
 function Settings({ onBack, networkController }) {
     const [rpcUrl, setRpcUrl] = useState('');
@@ -36,7 +37,11 @@ function Settings({ onBack, networkController }) {
 
     React.useEffect(() => {
         chrome.storage.local.get('agipocket_relay_url').then((data) => {
-            setRelayUrl(data.agipocket_relay_url || DEFAULT_RELAY_URL);
+            const storedRelay = data.agipocket_relay_url;
+            const nextRelay = !storedRelay || LEGACY_RELAY_URLS.has(storedRelay)
+                ? DEFAULT_RELAY_URL
+                : storedRelay;
+            setRelayUrl(nextRelay);
         });
     }, []);
 

@@ -1,5 +1,3 @@
-import { Connection } from '@solana/web3.js';
-
 const CHAIN_ID_ALIASES = {
   mainnet: ['mainnet', 'mainnet-beta', 'solana_mainnet', '101'],
   devnet: ['devnet', 'solana_devnet', '103'],
@@ -23,7 +21,7 @@ const DEFAULT_NETWORKS = {
   solana_mainnet: {
     chainId: 'mainnet',
     name: 'Solana Mainnet',
-    rpcUrl: 'https://api.mainnet-beta.solana.com',
+    rpcUrl: 'https://mainnet.helius-rpc.com/?api-key=566738fd-3d30-4f94-aea1-39ec28ea9598',
     symbol: 'SOL',
     blockExplorer: 'https://solscan.io'
   },
@@ -42,10 +40,20 @@ const DEFAULT_NETWORKS = {
     blockExplorer: 'https://solscan.io'
   }
 };
+const LEGACY_MAINNET_RPC = 'https://api.mainnet-beta.solana.com';
 
 export class NetworkController {
   constructor() {
     this.networks = { ...DEFAULT_NETWORKS };
+    this._solana = null;
+  }
+
+  async ensureSolana() {
+    if (!globalThis.window) globalThis.window = globalThis;
+    if (!this._solana) {
+      this._solana = await import('@solana/web3.js');
+    }
+    return this._solana;
   }
 
   async load() {
@@ -60,6 +68,10 @@ export class NetworkController {
 
     for (const key of Object.keys(DEFAULT_NETWORKS)) {
       this.networks[key] = { ...DEFAULT_NETWORKS[key], ...(this.networks[key] || {}) };
+    }
+
+    if (this.networks.solana_mainnet?.rpcUrl === LEGACY_MAINNET_RPC) {
+      this.networks.solana_mainnet.rpcUrl = DEFAULT_NETWORKS.solana_mainnet.rpcUrl;
     }
 
     this.normalizeNetworks();
@@ -100,6 +112,7 @@ export class NetworkController {
   async getProvider(key) {
     const network = this.networks[key];
     if (!network) throw new Error('Network not supported');
+    const { Connection } = await this.ensureSolana();
     return new Connection(network.rpcUrl, 'confirmed');
   }
 
@@ -107,6 +120,7 @@ export class NetworkController {
     if (!this.networks[key]) throw new Error('Network not found');
 
     try {
+      const { Connection } = await this.ensureSolana();
       const connection = new Connection(url, 'confirmed');
       await connection.getLatestBlockhash('processed');
       this.networks[key].rpcUrl = url;

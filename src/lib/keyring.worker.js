@@ -1,6 +1,5 @@
-﻿import nacl from 'tweetnacl';
+import nacl from 'tweetnacl';
 import bs58 from 'bs58';
-import { Keypair, VersionedTransaction, Transaction } from '@solana/web3.js';
 
 function base64ToBytes(base64) {
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -18,6 +17,15 @@ export class WorkerKeyringController {
   constructor() {
     this.secretKey = null;
     this.publicKey = null;
+    this._solana = null;
+  }
+
+  async ensureSolana() {
+    if (!globalThis.window) globalThis.window = globalThis;
+    if (!this._solana) {
+      this._solana = await import('@solana/web3.js');
+    }
+    return this._solana;
   }
 
   async importPrivateKey(privateKey) {
@@ -73,6 +81,7 @@ export class WorkerKeyringController {
   async signTransaction(serializedTxBase64) {
     if (!this.secretKey) throw new Error('Wallet not initialized');
 
+    const { Keypair, VersionedTransaction, Transaction } = await this.ensureSolana();
     const keypair = Keypair.fromSecretKey(this.secretKey);
     const txBytes = base64ToBytes(serializedTxBase64);
 

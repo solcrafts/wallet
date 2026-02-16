@@ -1,5 +1,3 @@
-import { RelayController } from '../lib/relay';
-
 console.log('Background script initialized');
 
 const processShim = globalThis.process || {};
@@ -13,8 +11,11 @@ if (typeof processShim.cwd !== 'function') processShim.cwd = () => '/';
 processShim.browser = true;
 globalThis.process = processShim;
 if (!globalThis.global) globalThis.global = globalThis;
+if (!globalThis.window) globalThis.window = globalThis;
+if (!globalThis.self) globalThis.self = globalThis;
 
-function bootstrap() {
+async function bootstrap() {
+    const { RelayController } = await import('../lib/relay');
     const relay = new RelayController();
     relay.init().catch(console.error);
 
@@ -35,7 +36,9 @@ function bootstrap() {
 }
 
 try {
-    bootstrap();
+    bootstrap().catch((error) => {
+        console.error('[Background] Async bootstrap failed:', error);
+    });
 } catch (error) {
     console.error('[Background] Bootstrap failed:', error);
 }

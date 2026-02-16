@@ -4,7 +4,8 @@ import { WorkerKeyringController } from './keyring.worker';
 import { NetworkController } from './networks';
 import { AGI_STORAGE_KEYS, agiNonceKey, cleanupLegacyStorage } from './storageKeys';
 
-const DEFAULT_RELAY_URL = 'ws://localhost:8080/';
+const DEFAULT_RELAY_URL = 'wss://wallet-relay.solcraft.top';
+const LEGACY_RELAY_URLS = new Set(['ws://localhost:8080', 'ws://localhost:8080/']);
 const bs58 = bs58Module.default || bs58Module;
 
 export class RelayController {
@@ -40,7 +41,10 @@ export class RelayController {
     await this.networkController.load();
 
     const data = await chrome.storage.local.get(AGI_STORAGE_KEYS.RELAY_URL);
-    const relayUrl = data[AGI_STORAGE_KEYS.RELAY_URL] || DEFAULT_RELAY_URL;
+    const storedRelayUrl = data[AGI_STORAGE_KEYS.RELAY_URL];
+    const relayUrl = !storedRelayUrl || LEGACY_RELAY_URLS.has(storedRelayUrl)
+      ? DEFAULT_RELAY_URL
+      : storedRelayUrl;
     await chrome.storage.local.set({ [AGI_STORAGE_KEYS.RELAY_URL]: relayUrl });
     this.connect(relayUrl);
 
