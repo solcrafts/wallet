@@ -149,6 +149,26 @@ export class KeyringController {
     return this.keypair ? bs58.encode(this.keypair.secretKey) : '';
   }
 
+  getPrivateKeySeedBase58() {
+    if (!this.keypair) return '';
+    return bs58.encode(this.keypair.secretKey.slice(0, 32));
+  }
+
+  getPrivateKeyJsonArray() {
+    if (!this.keypair) return '[]';
+    return JSON.stringify(Array.from(this.keypair.secretKey));
+  }
+
+  async getAddressFromPrivateKey(privateKey) {
+    const raw = String(privateKey || '').trim();
+    if (!raw) throw new Error('Private key is empty');
+
+    const normalized = isNumericArrayString(raw) ? JSON.stringify(JSON.parse(raw)) : raw;
+    const clone = new KeyringController();
+    await clone.importPrivateKey(normalized);
+    return clone.getAddress();
+  }
+
   getPublicKeyBytes() {
     return this.keypair ? this.keypair.publicKey.toBytes() : new Uint8Array();
   }

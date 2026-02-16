@@ -97,6 +97,10 @@ function Settings({ onBack, networkController }) {
 
     const [isRevealed, setIsRevealed] = useState(false);
     const [privateKey, setPrivateKey] = useState('');
+    const [seedKey, setSeedKey] = useState('');
+    const [jsonKey, setJsonKey] = useState('');
+    const [walletAddress, setWalletAddress] = useState('');
+    const [derivedAddress, setDerivedAddress] = useState('');
     const [copyMsg, setCopyMsg] = useState('');
 
     const handleAddRpc = async () => {
@@ -117,7 +121,17 @@ function Settings({ onBack, networkController }) {
             const isAuthenticated = await keyring.load();
 
             if (isAuthenticated && keyring.keypair) {
-                setPrivateKey(keyring.getPrivateKeyBase58());
+                const fullKey = keyring.getPrivateKeyBase58();
+                const seed = keyring.getPrivateKeySeedBase58();
+                const json = keyring.getPrivateKeyJsonArray();
+                const address = keyring.getAddress();
+                const derived = await keyring.getAddressFromPrivateKey(fullKey);
+
+                setPrivateKey(fullKey);
+                setSeedKey(seed);
+                setJsonKey(json);
+                setWalletAddress(address);
+                setDerivedAddress(derived);
                 setIsRevealed(true);
             } else {
                 setMsg({ text: 'Failed to load wallet.', type: 'error' });
@@ -127,9 +141,9 @@ function Settings({ onBack, networkController }) {
         }
     };
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(privateKey);
-        setCopyMsg('Copied');
+    const copyToClipboard = (value, label = 'Copied') => {
+        navigator.clipboard.writeText(value);
+        setCopyMsg(label);
         setTimeout(() => setCopyMsg(''), 2000);
     };
 
@@ -222,11 +236,37 @@ function Settings({ onBack, networkController }) {
                 ) : (
                     <>
                         <Card variant="inset" style={{ padding: 12 }}>
+                            <p className="section-title">Wallet Address</p>
+                            <p className="mono" style={{ fontSize: 11, wordBreak: 'break-all', userSelect: 'text' }}>{walletAddress}</p>
+                            <p className="section-title" style={{ marginTop: 10 }}>Address Derived From Export (64-byte)</p>
+                            <p className="mono" style={{ fontSize: 11, wordBreak: 'break-all', userSelect: 'text' }}>{derivedAddress}</p>
+                            <p className="subtitle" style={{ marginTop: 8, color: walletAddress === derivedAddress ? 'var(--success)' : 'var(--danger)' }}>
+                                {walletAddress === derivedAddress ? 'Verification: MATCHED' : 'Verification: MISMATCHED'}
+                            </p>
+                        </Card>
+
+                        <Card variant="inset" style={{ padding: 12 }}>
+                            <p className="section-title">Private Key (Base58, 64-byte secret key)</p>
                             <p className="mono" style={{ fontSize: 11, wordBreak: 'break-all', userSelect: 'text' }}>{privateKey}</p>
                         </Card>
+
+                        <Card variant="inset" style={{ padding: 12 }}>
+                            <p className="section-title">Seed (Base58, 32-byte)</p>
+                            <p className="mono" style={{ fontSize: 11, wordBreak: 'break-all', userSelect: 'text' }}>{seedKey}</p>
+                        </Card>
+
+                        <Card variant="inset" style={{ padding: 12 }}>
+                            <p className="section-title">Secret Key Array (JSON, 64-byte)</p>
+                            <p className="mono" style={{ fontSize: 11, wordBreak: 'break-all', userSelect: 'text' }}>{jsonKey}</p>
+                        </Card>
+
                         <div className="row gap-8">
-                            <Button onClick={copyToClipboard}>{copyMsg || 'Copy'}</Button>
-                            <Button onClick={() => { setIsRevealed(false); setPrivateKey(''); }} variant="ghost">Hide</Button>
+                            <Button onClick={() => copyToClipboard(privateKey, 'Copied: 64-byte')}>{copyMsg || 'Copy 64-byte'}</Button>
+                            <Button onClick={() => copyToClipboard(seedKey, 'Copied: 32-byte')} variant="ghost">Copy 32-byte</Button>
+                        </div>
+                        <div className="row gap-8">
+                            <Button onClick={() => copyToClipboard(jsonKey, 'Copied: JSON')} variant="ghost">Copy JSON</Button>
+                            <Button onClick={() => { setIsRevealed(false); setPrivateKey(''); setSeedKey(''); setJsonKey(''); setWalletAddress(''); setDerivedAddress(''); }} variant="ghost">Hide</Button>
                         </div>
                     </>
                 )}

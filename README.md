@@ -37,6 +37,16 @@ Supported `chainId` values:
 - `devnet`
 - `testnet`
 
+## Private Key Export Formats
+
+Settings now provides three export formats for cross-wallet compatibility:
+
+- Base58 64-byte secret key (`Keypair.secretKey`)
+- Base58 32-byte seed (`secretKey[0..31]`)
+- JSON array 64-byte secret key (Solana CLI style)
+
+If another wallet imports to a different address, try a different format according to that wallet's import spec.
+
 ## Relay Packet Format
 
 - Sender -> Wallet: `protocol: "ed25519/v1"`
